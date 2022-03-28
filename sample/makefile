@@ -12,11 +12,11 @@ ifeq ($(OS),Darwin)
   SEP=/
   CN=rm -rf 
   CFLAGS=-c -Wall -Wno-address-of-packed-member -F/Library/Frameworks
-  LDFLAGS=-F/Library/Frameworks -lm -ldl  
+  LDFLAGS=-F/Library/Frameworks 
 else ifeq ($(OS),Linux)
   LOCAL_PATH=..
   PROJ_PATH=.
-  LDFLAGS=-lm -ldl  
+  LDFLAGS= 
   CFLAGS=-c -Wall -Wno-unused-result -O3 
   SEP=/
   CN=rm -rf
@@ -26,13 +26,12 @@ else ifeq ($(OS),Windows_NT)
   SEP=\\
   CN=del /q
   CFLAGS=-c -Wall -O3
-  LDFLAGS=-lm 
+  LDFLAGS=
 endif
 
 INCFLAGS=-I$(LOCAL_PATH) -I$(PROJ_PATH) 
 
 SOURCES=$(PROJ_PATH)$(SEP)sample.cpp 
-SOURCES+=$(LOCAL_PATH)$(SEP)axisqueue.cpp
 
 OBJECTS=$(SOURCES:.cpp=.o)
 OBJECTS+=$(CSOURCES:.c=.o)
