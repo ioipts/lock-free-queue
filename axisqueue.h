@@ -87,7 +87,6 @@ inline bool enqueue(axisqueue q,QUEUETYPE v) {
 */
 inline bool dequeue(axisqueue q, QUEUETYPE* v) {
 	if (q->first.load(std::memory_order_acquire) == q->last.load(std::memory_order_acquire)) return false;
-	//atomic_thread_fence(std::memory_order_acquire);
 	*(v) = q->data[q->first];
 	q->first.store((q->first + 1) & q->mask,std::memory_order_release);
 	return true;
