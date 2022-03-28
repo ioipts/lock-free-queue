@@ -16,7 +16,7 @@ ifeq ($(OS),Darwin)
 else ifeq ($(OS),Linux)
   LOCAL_PATH=..
   PROJ_PATH=.
-  LDFLAGS= 
+  LDFLAGS=-lpthread
   CFLAGS=-c -Wall -Wno-unused-result -O3 
   SEP=/
   CN=rm -rf
