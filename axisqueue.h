@@ -97,7 +97,7 @@ inline bool dequeue(axisqueue q, QUEUETYPE* v) {
 #if defined(__GNUC__)
 	asm volatile("" ::: "memory");
 #endif
-	q->first = nfirst
+	q->first = nfirst;
 	return true;
 }
 
