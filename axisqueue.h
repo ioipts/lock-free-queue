@@ -73,7 +73,7 @@ inline void destroyqueue(axisqueue q)
 * @return false if the queue is full
 */
 inline bool enqueue(axisqueue q,QUEUETYPE v) {
-	unsigned int nlast = (q->last.load(std::memory_order_relaxed) + 1) & q->mask;
+	unsigned int nlast = (q->last.load(std::memory_order_acquire) + 1) & q->mask;
 	if (nlast == q->first) return false;
 	q->data[q->last] = v;
 	atomic_thread_fence(std::memory_order_release);
