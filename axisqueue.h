@@ -77,6 +77,9 @@ inline bool enqueue(axisqueue q,QUEUETYPE v) {
 	if (nlast == q->first) return false;
 	q->data[q->last] = v;
 	atomic_thread_fence(std::memory_order_release);
+#if defined(__GNUC__)
+	asm volatile("" ::: "memory");
+#endif
 	q->last.store(nlast, std::memory_order_relaxed);
 	return true;
 }
@@ -87,10 +90,14 @@ inline bool enqueue(axisqueue q,QUEUETYPE v) {
 * @return true if not empty
 */
 inline bool dequeue(axisqueue q, QUEUETYPE* v) {
+	unsigned int nfirst = (q->first.load(std::memory_order_relaxed) + 1) & q->mask;
 	if (q->first.load(std::memory_order_relaxed) == q->last.load(std::memory_order_relaxed)) return false;
 	atomic_thread_fence(std::memory_order_acquire);
 	*(v) = q->data[q->first];
-	q->first = (q->first + 1) & q->mask;
+#if defined(__GNUC__)
+	asm volatile("" ::: "memory");
+#endif
+	q->first = nfirst
 	return true;
 }
 
