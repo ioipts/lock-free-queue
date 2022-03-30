@@ -76,6 +76,7 @@ void multiplereaderthread()
 			if (strcmp(v,"data")!=0) printf("error\n");
 			free(v);
 		}
+		std::this_thread::sleep_for(std::chrono::nanoseconds(1000000));
 	}
 }
 
@@ -124,6 +125,7 @@ void testmultiplemultiplequeue()
 
 int main(int argc, char** argv)
 {
+
 	//testqueue();
 	testmultiplesinglequeue();
 	//testmultiplemultiplequeue();
