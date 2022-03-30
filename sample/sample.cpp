@@ -27,7 +27,7 @@ void readerthread()
 
 int main(int argc, char** argv)
 {
-	q = initqueue(100000);
+	q = initqueue(3);
 	std::thread t1(readerthread);
 	std::thread t2(writerthread);
 	t1.join();

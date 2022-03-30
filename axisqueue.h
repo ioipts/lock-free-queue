@@ -3,11 +3,17 @@
 
 /**
 * @file axisqueue.h
-* @brief Simple lock-free circular queue for one producer and one consumer.
+* @brief Simple lock-free and wait-free circular queue  
+*
+* - single producer and single consumer.
+* - multiple producer and single consumer.
+* - multiple producer and multiple consumer.
+*
 *
 * Inline functions.
 * Optimized for speed. 
 * No need for semaphore. 
+* Require C/C++11
 * C Header only.
 */
 
@@ -41,7 +47,7 @@ struct AxisQueueS
 #pragma pack(pop)
 
 /**
-* init a queue
+* init a single-producer-single-consumer queue
 * expand the size to be power of two
 */
 inline axisqueue initqueue(unsigned int size)
@@ -64,7 +70,7 @@ inline axisqueue initqueue(unsigned int size)
 }
 
 /**
-* destroy
+* destroy the queue
 */
 inline void destroyqueue(axisqueue q)
 {
@@ -82,10 +88,10 @@ inline bool enqueue(axisqueue q,QUEUETYPE v) {
 	unsigned int nlast = (q->last.load(std::memory_order_acquire) + 1) & q->mask;
 	if (nlast == q->first.load(std::memory_order_acquire)) return false;
 	q->data[q->last] = v;
-	atomic_thread_fence(std::memory_order_release);
 //#if defined(__GNUC__)
 //	asm volatile("sfence" ::: "memory");
 //#endif
+	atomic_thread_fence(std::memory_order_release);
 	q->last.store(nlast, std::memory_order_release);
 	return true;
 }
