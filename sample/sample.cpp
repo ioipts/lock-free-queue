@@ -1,7 +1,8 @@
 #include "axisqueue.h"
 #include <thread>
+#include <string.h>
 
-#define TESTNUM 1000000
+#define TESTNUM 10000000
 
 axisqueue q;
 int exitflag=0;
@@ -124,8 +125,8 @@ void testmultiplemultiplequeue()
 int main(int argc, char** argv)
 {
 	//testqueue();
-	//testmultiplesinglequeue();
-	testmultiplemultiplequeue();
+	testmultiplesinglequeue();
+	//testmultiplemultiplequeue();
 	printf("completed\n");
 	return 0;
 }
