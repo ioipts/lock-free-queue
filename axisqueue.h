@@ -15,6 +15,8 @@
 * No need for semaphore. 
 * Require C/C++11
 * C Header only.
+*
+* asm volatile("" ::: "memory");
 */
 
 #include <stdio.h>
@@ -24,7 +26,7 @@
 /**
 * Configure
 */
-#define QUEUETYPE int
+#define QUEUETYPE long
 
 #define ALLOCMEM malloc
 #define FREEMEM free
@@ -88,10 +90,6 @@ inline bool enqueue(axisqueue q,QUEUETYPE v) {
 	unsigned int nlast = (q->last.load(std::memory_order_acquire) + 1) & q->mask;
 	if (nlast == q->first.load(std::memory_order_acquire)) return false;
 	q->data[q->last] = v;
-//#if defined(__GNUC__)
-//	asm volatile("sfence" ::: "memory");
-//#endif
-	atomic_thread_fence(std::memory_order_release);
 	q->last.store(nlast, std::memory_order_release);
 	return true;
 }
@@ -106,10 +104,6 @@ inline bool dequeue(axisqueue q, QUEUETYPE* v) {
 	unsigned int nfirst = (q->first.load(std::memory_order_acquire) + 1) & q->mask;
 	if (q->first == q->last.load(std::memory_order_acquire)) return false;
 	*(v) = q->data[q->first];
-//#if defined(__GNUC__)
-//	asm volatile("sfence" ::: "memory");
-//#endif
-	atomic_thread_fence(std::memory_order_release);
 	q->first.store(nfirst, std::memory_order_release);
 	return true;
 }
@@ -155,9 +149,6 @@ inline bool multipleenqueue(axisqueue q, QUEUETYPE v) {
 	while (lastr != q->last.load(std::memory_order_acquire)) ;
 	q->data[q->last] = v;
 	q->last.store((q->last+1) & q->mask, std::memory_order_release);
-//#if defined(__GNUC__)
-//	asm volatile("sfence" ::: "memory");
-//#endif
 	atomic_thread_fence(std::memory_order_release);
 	q->entries++;
 	return true;
@@ -174,9 +165,6 @@ inline bool singledequeue(axisqueue q, QUEUETYPE* v) {
 	if (q->entries==0) return false;
 	*(v) = q->data[q->first];
 	q->first.store(nfirst, std::memory_order_release);
-//#if defined(__GNUC__)
-//	asm volatile("sfence" ::: "memory");
-//#endif
 	atomic_thread_fence(std::memory_order_release);
 	q->entries--;
 	return true;
@@ -197,9 +185,6 @@ inline bool multipledequeue(axisqueue q, QUEUETYPE* v) {
 	while (firstr != q->first.load(std::memory_order_acquire)) ;
 	*(v) = q->data[q->first];
 	q->first.store((q->first+1) & q->mask, std::memory_order_release);
-//#if defined(__GNUC__)
-//	asm volatile("sfence" ::: "memory");
-//#endif
 	atomic_thread_fence(std::memory_order_release);
 	q->entries--;
 	return true;
@@ -220,9 +205,6 @@ inline bool mastermultipledequeue(axisqueue q, QUEUETYPE* v) {
 	while (firstr != q->first.load(std::memory_order_acquire)) ;
 	*(v) = q->data[q->first];
 	q->first.store((q->first+1) & q->mask, std::memory_order_release);
-//#if defined(__GNUC__)
-//	asm volatile("sfence" ::: "memory");
-//#endif
 	atomic_thread_fence(std::memory_order_release);
 	q->entries--;
 	return true;

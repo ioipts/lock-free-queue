@@ -1,38 +1,131 @@
 #include "axisqueue.h"
 #include <thread>
 
-#define TESTNUM 10000
+#define TESTNUM 1000000
 
 axisqueue q;
+int exitflag=0;
 
 void writerthread()
 {
-	QUEUETYPE i = 1;
-	while (i <= TESTNUM) {
-		if (enqueue(q, i)) i++;
+	int i=0;
+	while (i<TESTNUM) {
+		char* data=(char*)malloc(16);
+		strcpy(data,"data");
+		if (!enqueue(q, (QUEUETYPE)data)) {
+			free(data);
+		}
+		i++;
 	}
+	exitflag++;
 }
 
 void readerthread()
 {
-	QUEUETYPE v=0;
-	unsigned int sum = 0;
-	unsigned int check = ((TESTNUM+1)*TESTNUM)>>1;
-	while (sum!=check) {
-		if (dequeue(q, &v)) {
-			sum += v;
+	while (exitflag==0) {
+		char* v;
+		if (singledequeue(q, (QUEUETYPE*)&v)) {
+			if (strcmp(v,"data")!=0) printf("error\n");
+			free(v);
 		}
 	}
 }
 
-int main(int argc, char** argv)
+void multiplewriterthread()
+{
+	int i=0;
+	while (i<TESTNUM) {
+		char* data=(char*)malloc(16);
+		strcpy(data,"data");
+		if (!multipleenqueue(q, (QUEUETYPE)data)) {
+			free(data);
+		}
+		i++;
+	}
+	exitflag++;
+}
+
+void singlereaderthread()
+{
+	while (exitflag<3) {
+		char* v;
+		if (singledequeue(q, (QUEUETYPE*)&v)) {
+			if (strcmp(v,"data")!=0) printf("error\n");
+			free(v);
+		}
+	}
+}
+
+void mastermultiplereaderthread()
+{
+	while (exitflag<3) {
+		char* v;
+		if (mastermultipledequeue(q, (QUEUETYPE*)&v)) {
+			if (strcmp(v,"data")!=0) printf("error\n");
+			free(v);
+		}
+	}
+}
+
+void multiplereaderthread()
+{
+	while (exitflag<3) {
+		char* v;
+		if (multipledequeue(q, (QUEUETYPE*)&v)) {
+			if (strcmp(v,"data")!=0) printf("error\n");
+			free(v);
+		}
+	}
+}
+
+void testqueue()
 {
 	q = initqueue(3);
-	std::thread t1(readerthread);
-	std::thread t2(writerthread);
-	t1.join();
-	t2.join();
+	std::thread r1(readerthread);
+	std::thread w1(writerthread);
+	w1.join();
+	r1.join();
 	destroyqueue(q);
+}
+
+void testmultiplesinglequeue()
+{
+	q = initmultiplequeue(10,3,1);
+	std::thread r1(singlereaderthread);
+	std::thread w1(multiplewriterthread);
+	std::thread w2(multiplewriterthread);
+	std::thread w3(multiplewriterthread);
+	w1.join();
+	w2.join();
+	w3.join();
+	r1.join();
+	destroyqueue(q);
+}
+
+void testmultiplemultiplequeue()
+{
+	q = initmultiplequeue(10,3,3);
+	std::thread r1(mastermultiplereaderthread);
+	std::thread r2(multiplereaderthread);
+	std::thread r3(multiplereaderthread);
+	std::thread w1(multiplewriterthread);
+	std::thread w2(multiplewriterthread);
+	std::thread w3(multiplewriterthread);
+	w1.join();
+	w2.join();
+	w3.join();
+	r3.join();
+	r2.join();
+	r1.join();
+	destroyqueue(q);
+}
+
+
+int main(int argc, char** argv)
+{
+	//testqueue();
+	//testmultiplesinglequeue();
+	testmultiplemultiplequeue();
 	printf("completed\n");
 	return 0;
 }
