@@ -1,21 +1,27 @@
 #include "axisqueue.h"
-#include <thread>
+#include <stdlib.h>
 #include <string.h>
+#include <thread>
 
 #define TESTNUM 10000000
+#pragma warning( disable : 4996 )	// disable deprecated warning for Windows
+#define _CRT_SECURE_NO_WARNINGS		// disable deprecated warning for Windows
 
 axisqueue q;
-int exitflag=0;
+int exitflag = 0;
+std::atomic<unsigned int> countwriter = 0;
+std::atomic<unsigned int> countreader = 0;
 
 void writerthread()
 {
-	int i=0;
-	while (i<TESTNUM) {
-		char* data=(char*)malloc(16);
-		strcpy(data,"data");
+	int i = 0;
+	while (i < TESTNUM) {
+		char* data = (char*)malloc(16);
+		strcpy(data, "data");
 		if (!enqueue(q, (QUEUETYPE)data)) {
 			free(data);
 		}
+		else countwriter++;
 		i++;
 	}
 	exitflag++;
@@ -23,24 +29,30 @@ void writerthread()
 
 void readerthread()
 {
-	while (exitflag==0) {
-		char* v;
-		if (singledequeue(q, (QUEUETYPE*)&v)) {
-			if (strcmp(v,"data")!=0) printf("error\n");
+	char* v;
+	while (exitflag == 0) {
+		if (dequeue(q, (QUEUETYPE*)&v)) {
+			if (strcmp(v, "data") != 0) printf("error\n");
+			else countreader++;
 			free(v);
 		}
+	}
+	while (dequeue(q, (QUEUETYPE*)&v)) {
+		free(v);
+		countreader++;
 	}
 }
 
 void multiplewriterthread()
 {
-	int i=0;
-	while (i<TESTNUM) {
-		char* data=(char*)malloc(16);
-		strcpy(data,"data");
+	int i = 0;
+	while (i < TESTNUM) {
+		char* data = (char*)malloc(16);
+		strcpy(data, "data");
 		if (!multipleenqueue(q, (QUEUETYPE)data)) {
 			free(data);
 		}
+		else countwriter++;
 		i++;
 	}
 	exitflag++;
@@ -48,35 +60,46 @@ void multiplewriterthread()
 
 void singlereaderthread()
 {
-	while (exitflag<3) {
-		char* v;
+	char* v;
+	while (exitflag < 3) {
 		if (singledequeue(q, (QUEUETYPE*)&v)) {
-			if (strcmp(v,"data")!=0) printf("error\n");
+			if (strcmp(v, "data") != 0) printf("error\n");
+			else countreader++;
 			free(v);
 		}
+	}
+	while (singledequeue(q, (QUEUETYPE*)&v)) {
+		free(v);
+		countreader++;
 	}
 }
 
 void mastermultiplereaderthread()
 {
-	while (exitflag<3) {
-		char* v;
+	char* v;
+	while (exitflag < 3) {
 		if (mastermultipledequeue(q, (QUEUETYPE*)&v)) {
-			if (strcmp(v,"data")!=0) printf("error\n");
+			if (strcmp(v, "data") != 0) printf("error\n");
+			else countreader++;
 			free(v);
 		}
+		std::this_thread::sleep_for(std::chrono::nanoseconds(1000000));
+	}
+	while (mastermultipledequeue(q, (QUEUETYPE*)&v)) {
+		free(v);
+		countreader++;
 	}
 }
 
 void multiplereaderthread()
 {
-	while (exitflag<3) {
+	while (exitflag < 3) {
 		char* v;
 		if (multipledequeue(q, (QUEUETYPE*)&v)) {
-			if (strcmp(v,"data")!=0) printf("error\n");
+			if (strcmp(v, "data") != 0) printf("error\n");
+			else countreader++;
 			free(v);
 		}
-		std::this_thread::sleep_for(std::chrono::nanoseconds(1000000));
 	}
 }
 
@@ -92,7 +115,7 @@ void testqueue()
 
 void testmultiplesinglequeue()
 {
-	q = initmultiplequeue(10,3,1);
+	q = initmultiplequeue(10, 3, 1);
 	std::thread r1(singlereaderthread);
 	std::thread w1(multiplewriterthread);
 	std::thread w2(multiplewriterthread);
@@ -106,7 +129,7 @@ void testmultiplesinglequeue()
 
 void testmultiplemultiplequeue()
 {
-	q = initmultiplequeue(10,3,3);
+	q = initmultiplequeue(10, 3, 3);
 	std::thread r1(mastermultiplereaderthread);
 	std::thread r2(multiplereaderthread);
 	std::thread r3(multiplereaderthread);
@@ -122,13 +145,15 @@ void testmultiplemultiplequeue()
 	destroyqueue(q);
 }
 
-
 int main(int argc, char** argv)
 {
 
 	//testqueue();
-	testmultiplesinglequeue();
-	//testmultiplemultiplequeue();
-	printf("completed\n");
+	//testmultiplesinglequeue();
+	testmultiplemultiplequeue();
+	if (countwriter != countreader) printf("not completed\n");
+	else  printf("completed\n");
 	return 0;
 }
+
+

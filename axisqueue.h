@@ -3,7 +3,7 @@
 
 /**
 * @file axisqueue.h
-* @brief Simple lock-free and wait-free circular queue  
+* @brief Simple lock-free and wait-free circular queue
 *
 * - single producer and single consumer.
 * - multiple producer and single consumer.
@@ -11,12 +11,16 @@
 *
 *
 * Inline functions.
-* Optimized for speed. 
-* No need for semaphore. 
+* Optimized for speed.
+* No need for semaphore.
 * Require C/C++11
 * C Header only.
 *
+* for older version of c/c++ try
 * asm volatile("" ::: "memory");
+* 
+* 31/03/2022 tested on Windows
+* 
 */
 
 #include <stdio.h>
@@ -26,7 +30,7 @@
 /**
 * Configure
 */
-#define QUEUETYPE long
+#define QUEUETYPE void*
 
 #define ALLOCMEM malloc
 #define FREEMEM free
@@ -58,7 +62,7 @@ inline axisqueue initqueue(unsigned int size)
 	q = (axisqueue)ALLOCMEM(sizeof(struct AxisQueueS));
 	if (q == NULL) return NULL;
 	unsigned int sizePowerOfTwo = 2;
-	for (unsigned int i = 0; i < (sizeof(unsigned int)<<3); i++)
+	for (unsigned int i = 0; i < (sizeof(unsigned int) << 3); i++)
 	{
 		if (sizePowerOfTwo >= size) break;
 		sizePowerOfTwo = sizePowerOfTwo << 1;
@@ -83,10 +87,10 @@ inline void destroyqueue(axisqueue q)
 /**
 * Single producer, single consumer
 * @param q queue
-* @param v value 
+* @param v value
 * @return false if the queue is full
 */
-inline bool enqueue(axisqueue q,QUEUETYPE v) {
+inline bool enqueue(axisqueue q, QUEUETYPE v) {
 	unsigned int nlast = (q->last.load(std::memory_order_acquire) + 1) & q->mask;
 	if (nlast == q->first.load(std::memory_order_acquire)) return false;
 	q->data[q->last] = v;
@@ -97,7 +101,7 @@ inline bool enqueue(axisqueue q,QUEUETYPE v) {
 /**
 * Single producer, single consumer
 * @param q queue
-* @param v value 
+* @param v value
 * @return true if not empty
 */
 inline bool dequeue(axisqueue q, QUEUETYPE* v) {
@@ -112,7 +116,7 @@ inline bool dequeue(axisqueue q, QUEUETYPE* v) {
 * init a multiple producer queue
 * expand the size to be power of two
 */
-inline axisqueue initmultiplequeue(unsigned int size,unsigned int num_producer,unsigned int num_consumer)
+inline axisqueue initmultiplequeue(unsigned int size, unsigned int num_producer, unsigned int num_consumer)
 {
 	axisqueue q;
 	q = (axisqueue)ALLOCMEM(sizeof(struct AxisQueueS));
@@ -141,14 +145,14 @@ inline axisqueue initmultiplequeue(unsigned int size,unsigned int num_producer,u
 * @return false if the queue is full
 */
 inline bool multipleenqueue(axisqueue q, QUEUETYPE v) {
-	if (q->entries.load(std::memory_order_acquire)+q->num_producer >= q->size) return false;
+	if (q->entries.load(std::memory_order_acquire) + q->num_producer >= q->size) return false;
 	//reserve and wait
 	unsigned int lastr = q->last_res.fetch_add(1);
 	q->last_res.fetch_and(q->mask);
 	lastr &= q->mask;
-	while (lastr != q->last.load(std::memory_order_acquire)) ;
+	while (lastr != q->last.load(std::memory_order_acquire));
 	q->data[q->last] = v;
-	q->last.store((q->last+1) & q->mask, std::memory_order_release);
+	q->last.store((q->last + 1) & q->mask, std::memory_order_release);
 	atomic_thread_fence(std::memory_order_release);
 	q->entries++;
 	return true;
@@ -162,7 +166,7 @@ inline bool multipleenqueue(axisqueue q, QUEUETYPE v) {
 */
 inline bool singledequeue(axisqueue q, QUEUETYPE* v) {
 	unsigned int nfirst = (q->first.load(std::memory_order_acquire) + 1) & q->mask;
-	if (q->entries==0) return false;
+	if (q->entries == 0) return false;
 	*(v) = q->data[q->first];
 	q->first.store(nfirst, std::memory_order_release);
 	atomic_thread_fence(std::memory_order_release);
@@ -177,14 +181,14 @@ inline bool singledequeue(axisqueue q, QUEUETYPE* v) {
 * @return true if not empty
 */
 inline bool multipledequeue(axisqueue q, QUEUETYPE* v) {
-	if (q->entries<=q->num_consumer) return false;
+	if (q->entries <= q->num_consumer) return false;
 	//reserve and wait
 	unsigned int firstr = q->first_res.fetch_add(1);
 	q->first_res.fetch_and(q->mask);
 	firstr &= q->mask;
-	while (firstr != q->first.load(std::memory_order_acquire)) ;
+	while (firstr != q->first.load(std::memory_order_acquire));
 	*(v) = q->data[q->first];
-	q->first.store((q->first+1) & q->mask, std::memory_order_release);
+	q->first.store((q->first + 1) & q->mask, std::memory_order_release);
 	atomic_thread_fence(std::memory_order_release);
 	q->entries--;
 	return true;
@@ -197,14 +201,14 @@ inline bool multipledequeue(axisqueue q, QUEUETYPE* v) {
 * @return true if not empty
 */
 inline bool mastermultipledequeue(axisqueue q, QUEUETYPE* v) {
-	if (q->entries==0) return false;
+	if (q->entries == 0) return false;
 	//reserve and wait
 	unsigned int firstr = q->first_res.fetch_add(1);
 	q->first_res.fetch_and(q->mask);
 	firstr &= q->mask;
-	while (firstr != q->first.load(std::memory_order_acquire)) ;
+	while (firstr != q->first.load(std::memory_order_acquire));
 	*(v) = q->data[q->first];
-	q->first.store((q->first+1) & q->mask, std::memory_order_release);
+	q->first.store((q->first + 1) & q->mask, std::memory_order_release);
 	atomic_thread_fence(std::memory_order_release);
 	q->entries--;
 	return true;
@@ -215,9 +219,8 @@ inline bool mastermultipledequeue(axisqueue q, QUEUETYPE* v) {
 */
 inline void clearqueue(axisqueue q)
 {
-	q->first.store(q->last,std::memory_order_relaxed);
+	q->first.store(q->last, std::memory_order_relaxed);
 }
 
 #endif 
-
-
+ 
