@@ -4,15 +4,15 @@
 #include <thread>
 #include <atomic>
 
-#define TESTNUM 10000000
+#define TESTNUM 100000
 
 #if defined(_MSC_VER)
-#pragma warning( disable : 4996 )	// disable deprecated warning for Windows
-#define _CRT_SECURE_NO_WARNINGS		// disable deprecated warning for Windows
+	#pragma warning( disable : 4996 )	// disable deprecated warning for Windows
+	#define _CRT_SECURE_NO_WARNINGS		// disable deprecated warning for Windows
 #endif
 
 axisqueue q;
-int exitflag = 0;
+int exitflag;
 std::atomic<unsigned int> countwriter;
 std::atomic<unsigned int> countreader;
 
@@ -45,6 +45,21 @@ void readerthread()
 		free(v);
 		countreader++;
 	}
+}
+
+void singlewriterthread()
+{
+	int i = 0;
+	while (i < TESTNUM) {
+		char* data = (char*)malloc(16);
+		strcpy(data, "data");
+		if (!singleenqueue(q, (QUEUETYPE)data)) {
+			free(data);
+		}
+		else countwriter++;
+		i++;
+	}
+	exitflag=3;
 }
 
 void multiplewriterthread()
@@ -107,8 +122,9 @@ void multiplereaderthread()
 	}
 }
 
-void testqueue()
+void testsinglesinglequeue()
 {
+	exitflag=0;
 	q = initqueue(3);
 	std::thread r1(readerthread);
 	std::thread w1(writerthread);
@@ -119,6 +135,7 @@ void testqueue()
 
 void testmultiplesinglequeue()
 {
+	exitflag=0;
 	q = initmultiplequeue(10, 3, 1);
 	std::thread r1(singlereaderthread);
 	std::thread w1(multiplewriterthread);
@@ -131,8 +148,24 @@ void testmultiplesinglequeue()
 	destroyqueue(q);
 }
 
+void testsinglemultiplequeue()
+{
+	exitflag=0;
+	q = initmultiplequeue(10, 1, 3);
+	std::thread r1(mastermultiplereaderthread);
+	std::thread r2(multiplereaderthread);
+	std::thread r3(multiplereaderthread);
+	std::thread w1(singlewriterthread);
+	w1.join();
+	r1.join();
+	r2.join();
+	r3.join();
+	destroyqueue(q);
+}
+
 void testmultiplemultiplequeue()
 {
+	exitflag=0;
 	q = initmultiplequeue(10, 3, 3);
 	std::thread r1(mastermultiplereaderthread);
 	std::thread r2(multiplereaderthread);
@@ -153,8 +186,9 @@ int main(int argc, char** argv)
 {
 	countreader=0;
 	countwriter=0;
-	//testqueue();
-	//testmultiplesinglequeue();
+	testsinglesinglequeue();
+	testsinglemultiplequeue();
+	testmultiplesinglequeue();
 	testmultiplemultiplequeue();
 	if (countwriter != countreader) printf("not completed\n");
 	else  printf("completed\n");
