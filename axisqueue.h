@@ -53,6 +53,12 @@
 * No need for semaphore
 * C Header only.
 * 
+* Performance test
+*
+* i7-1165G7 with 1 million operations 
+* lock queue took 2sec.
+* lock-free queue took only 0.1sec.
+*
 * 31/03/2022 tested on Windows, Mac M1 both ARM and X64, Mac Intel, RaspianOS 32 and 64 bit, Linux both ARM and x64
 * 
 */

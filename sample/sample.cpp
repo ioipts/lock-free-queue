@@ -1,20 +1,66 @@
 #include "axisqueue.h"
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
+#include <mutex>
 #include <thread>
 #include <atomic>
+#include <chrono>
+#include <ctime> 
 
-#define TESTNUM 100000
+#define TESTNUM 1000000
 
 #if defined(_MSC_VER)
-	#pragma warning( disable : 4996 )	// disable deprecated warning for Windows
-	#define _CRT_SECURE_NO_WARNINGS		// disable deprecated warning for Windows
+// disable deprecated warning for Windows
+#pragma warning( disable : 4996 )	
+#define _CRT_SECURE_NO_WARNINGS		
 #endif
 
 axisqueue q;
 int exitflag;
 std::atomic<unsigned int> countwriter;
 std::atomic<unsigned int> countreader;
+std::mutex m;
+
+void writerlockthread()
+{
+	int i = 0;
+	while (i < TESTNUM) {
+		char* data = (char*)malloc(16);
+		strcpy(data, "data");
+		m.lock();
+		bool ret = enqueue(q, (QUEUETYPE)data);
+		m.unlock();
+		if (!ret) {
+			free(data);
+		}
+		else countwriter++;
+		i++;
+	}
+	exitflag++;
+
+}
+
+void readerlockthread()
+{
+	char* v;
+	while (exitflag == 0) {
+		m.lock();
+		bool ret = dequeue(q, (QUEUETYPE*)&v);
+		m.unlock();
+		if (ret) {
+			if (strcmp(v, "data") != 0) printf("error\n");
+			else countreader++;
+			free(v);
+		}
+	}
+	m.lock();
+	while (dequeue(q, (QUEUETYPE*)&v)) {
+		free(v);
+		countreader++;
+	}
+	m.unlock();
+}
 
 void writerthread()
 {
@@ -59,7 +105,7 @@ void singlewriterthread()
 		else countwriter++;
 		i++;
 	}
-	exitflag=3;
+	exitflag = 3;
 }
 
 void multiplewriterthread()
@@ -124,18 +170,23 @@ void multiplereaderthread()
 
 void testsinglesinglequeue()
 {
-	exitflag=0;
+	exitflag = 0;
 	q = initqueue(3);
+	auto start = std::chrono::system_clock::now();
 	std::thread r1(readerthread);
 	std::thread w1(writerthread);
 	w1.join();
 	r1.join();
+	auto end = std::chrono::system_clock::now();
 	destroyqueue(q);
+	std::chrono::duration<double> elapsed_seconds = end - start;
+	std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+	std::cout << "lock free elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
 void testmultiplesinglequeue()
 {
-	exitflag=0;
+	exitflag = 0;
 	q = initmultiplequeue(10, 3, 1);
 	std::thread r1(singlereaderthread);
 	std::thread w1(multiplewriterthread);
@@ -150,7 +201,7 @@ void testmultiplesinglequeue()
 
 void testsinglemultiplequeue()
 {
-	exitflag=0;
+	exitflag = 0;
 	q = initmultiplequeue(10, 1, 3);
 	std::thread r1(mastermultiplereaderthread);
 	std::thread r2(multiplereaderthread);
@@ -165,7 +216,7 @@ void testsinglemultiplequeue()
 
 void testmultiplemultiplequeue()
 {
-	exitflag=0;
+	exitflag = 0;
 	q = initmultiplequeue(10, 3, 3);
 	std::thread r1(mastermultiplereaderthread);
 	std::thread r2(multiplereaderthread);
@@ -182,10 +233,27 @@ void testmultiplemultiplequeue()
 	destroyqueue(q);
 }
 
+void testlockqueue()
+{
+	exitflag = 0;
+	q = initqueue(3);
+	auto start = std::chrono::system_clock::now();
+	std::thread r1(readerlockthread);
+	std::thread w1(writerlockthread);
+	w1.join();
+	r1.join();
+	auto end = std::chrono::system_clock::now();
+	destroyqueue(q);
+	std::chrono::duration<double> elapsed_seconds = end - start;
+	std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+	std::cout << "mutex lock elapsed time: " << elapsed_seconds.count() << "s\n";
+}
+
 int main(int argc, char** argv)
 {
-	countreader=0;
-	countwriter=0;
+	countreader = 0;
+	countwriter = 0;
+	testlockqueue();
 	testsinglesinglequeue();
 	testsinglemultiplequeue();
 	testmultiplesinglequeue();
