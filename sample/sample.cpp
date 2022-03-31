@@ -2,15 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <thread>
+#include <atomic>
 
 #define TESTNUM 10000000
+
+#if defined(_MSC_VER)
 #pragma warning( disable : 4996 )	// disable deprecated warning for Windows
 #define _CRT_SECURE_NO_WARNINGS		// disable deprecated warning for Windows
+#endif
 
 axisqueue q;
 int exitflag = 0;
-std::atomic<unsigned int> countwriter = 0;
-std::atomic<unsigned int> countreader = 0;
+std::atomic<unsigned int> countwriter;
+std::atomic<unsigned int> countreader;
 
 void writerthread()
 {
@@ -147,7 +151,8 @@ void testmultiplemultiplequeue()
 
 int main(int argc, char** argv)
 {
-
+	countreader=0;
+	countwriter=0;
 	//testqueue();
 	//testmultiplesinglequeue();
 	testmultiplemultiplequeue();
