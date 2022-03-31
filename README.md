@@ -17,3 +17,5 @@ cd sample
 make  
 ./testqueue 
 
+# Author
+- Pit Suwongs พิทย์ สุวงศ์ (admin@ornpit.com)
