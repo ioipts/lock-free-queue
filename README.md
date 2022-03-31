@@ -4,7 +4,7 @@
 แต่ไม่ต้องมีตัวล็อคแต่อย่างใด ช่วยเพิ่มความเร็วเมื่อเทียบกับวิธีล็อคแบบปกติ  
 ถึง 20 เท่า ซึ่งเธรดตัวเขียนข้อมูลลงคิว และเธรดตัวอ่านข้อมูลออกจากคิว สามารถมีได้หลายเธรดด้วย  
 
-Lock-free and wait-free Circular queue (Ring queue).
+Lock-free and wait-free circular queue (Ring queue).
 It uses atomic operation to be lock-free.
 
 ## Performance
