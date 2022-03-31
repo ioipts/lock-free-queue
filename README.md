@@ -1,10 +1,10 @@
-# Lock Free Queue
+# Lock-Free and Wait-Free Queue
 
-Thread safe Circular queue (Ring queue).
+Lock-free and wait-free Circular queue (Ring queue).
 It uses atomic operation to be lock-free.
 
 ## Feature
-Written in C++11.  
+Written in C/C++11.  
 Support multi-platform.  
 Support both 32-bit and 64-bit.  
 
