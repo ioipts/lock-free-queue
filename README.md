@@ -3,6 +3,13 @@
 Lock-free and wait-free Circular queue (Ring queue).
 It uses atomic operation to be lock-free.
 
+## Performance
+  
+Tested on i7-1165G7  
+For 1 million operations,  
+normal mutex lock queue took 2sec.  
+lock-free queue took only 0.1sec.  
+
 ## Feature
 Written in C/C++11.  
 Support multi-platform.  
@@ -18,4 +25,4 @@ make
 ./testqueue 
 
 # Author
-- Pit Suwongs พิทย์ สุวงศ์ (admin@ornpit.com)
+- Pit Suwongs พิทย์ สุวงศ์ (admin@ornpit.com)  
