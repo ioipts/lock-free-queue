@@ -148,7 +148,7 @@ void mastermultiplereaderthread()
 			else countreader++;
 			free(v);
 		}
-		std::this_thread::sleep_for(std::chrono::nanoseconds(1000000));
+		std::this_thread::sleep_for(std::chrono::nanoseconds(10000000));
 	}
 	while (mastermultipledequeue(q, (QUEUETYPE*)&v)) {
 		free(v);
@@ -165,6 +165,7 @@ void multiplereaderthread()
 			else countreader++;
 			free(v);
 		}
+		std::this_thread::sleep_for(std::chrono::nanoseconds(1000000));
 	}
 }
 
@@ -172,15 +173,14 @@ void testsinglesinglequeue()
 {
 	exitflag = 0;
 	q = initqueue(3);
-	auto start = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 	std::thread r1(readerthread);
 	std::thread w1(writerthread);
 	w1.join();
 	r1.join();
-	auto end = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
 	destroyqueue(q);
 	std::chrono::duration<double> elapsed_seconds = end - start;
-	std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 	std::cout << "lock free elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
@@ -237,15 +237,14 @@ void testlockqueue()
 {
 	exitflag = 0;
 	q = initqueue(3);
-	auto start = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 	std::thread r1(readerlockthread);
 	std::thread w1(writerlockthread);
 	w1.join();
 	r1.join();
-	auto end = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
 	destroyqueue(q);
 	std::chrono::duration<double> elapsed_seconds = end - start;
-	std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 	std::cout << "mutex lock elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
